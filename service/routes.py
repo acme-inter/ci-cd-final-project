@@ -1,12 +1,8 @@
-"""
-Controller for routes
-"""
 from flask import jsonify, url_for, abort
 from service import app
 from service.common import status
 
 COUNTER = {}
-
 
 ############################################################
 # Health Endpoint
@@ -22,7 +18,7 @@ def health():
 ############################################################
 @app.route("/")
 def index():
-    """Returns information abut the service"""
+    """Returns information about the service"""
     app.logger.info("Request for Base URL")
     return jsonify(
         status=status.HTTP_200_OK,
@@ -53,9 +49,7 @@ def list_counters():
 @app.route("/counters/<name>", methods=["POST"])
 def create_counters(name):
     """Creates a new counter"""
-    app.logger.info(
-        "Request to Create counter: %s...", name
-    )
+    app.logger.info("Request to Create counter: %s...", name)
 
     if name in COUNTER:
         return abort(
@@ -79,9 +73,7 @@ def create_counters(name):
 @app.route("/counters/<name>", methods=["GET"])
 def read_counters(name):
     """Reads a single counter"""
-    app.logger.info(
-        "Request to Read counter: %s...", name
-    )
+    app.logger.info("Request to Read counter: %s...", name)
 
     if name not in COUNTER:
         return abort(
@@ -99,9 +91,7 @@ def read_counters(name):
 @app.route("/counters/<name>", methods=["PUT"])
 def update_counters(name):
     """Updates a counter"""
-    app.logger.info(
-        "Request to Update counter: %s...", name
-    )
+    app.logger.info("Request to Update counter: %s...", name)
 
     if name not in COUNTER:
         return abort(
