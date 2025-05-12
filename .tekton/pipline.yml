@@ -1,0 +1,83 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:  
+  name: ci-cd-pipeline
+spec:
+  workspaces:
+    - name: output
+  params:
+    - name: app-name
+    - name: build-image
+    - name: repo-url
+    - name: branch
+      default: master
+  tasks:
+    - name: cleanup
+      workspaces:
+        - name: source
+          workspace: output       
+      taskRef:
+        name: cleanup
+
+    - name: git-clone
+      workspaces:
+        - name: output
+          workspace: output        
+      taskRef:
+        name: git-clone
+      params:
+      - name: url
+        value: $(params.repo-url)
+      - name: revision
+        value: $(params.branch)
+      runAfter:
+        - cleanup      
+
+    - name: flake8
+      workspaces:
+        - name: source
+          workspace: output        
+      taskRef:
+        name: flake8
+      params:
+      - name: image
+        value: "python:3.9-slim"
+      - name: args
+        value: ["--count","--max-complexity=10","--max-line-length=127","--statistics"]
+      runAfter:
+        - git-clone
+
+    - name: nose
+      workspaces:
+        - name: source
+          workspace: output       
+      taskRef:
+        name: nose
+      params:
+      - name: args
+        value: "-v --with-spec --spec-color"
+      runAfter:
+        - flake8
+
+    - name: buildah
+      workspaces:
+        - name: source
+          workspace: output        
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      params:
+      - name: IMAGE
+        value: "$(params.build-image)"
+      runAfter:
+        - nose
+
+    - name: deploy
+      taskRef:
+        name: openshift-client
+        kind: ClusterTask
+      params:
+      - name: SCRIPT
+        value: "oc create deployment $(params.app-name) --image=$(params.build-image) --dry-run=client -o yaml | oc apply -f -"
+      runAfter:
+        - buildah
